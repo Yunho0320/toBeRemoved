@@ -1,0 +1,85 @@
+<template>
+  <div class="ag-theme-quartz" style="height: 100vh; width: 100vw;">
+    <ag-grid-vue
+      class="ag-theme-quartz"
+      :columnDefs="columnDefs"
+      :rowData="rowData"
+      :defaultColDef="defaultColDef"
+      @grid-ready="onGridReady"
+    />
+  </div>
+</template>
+
+<script>
+import 'ag-grid-enterprise';
+import { AgGridVue } from 'ag-grid-vue';
+
+export default {
+  name: 'MergedGrid',
+  components: { AgGridVue },
+  data() {
+    return {
+      columnDefs: [
+        {
+          field: 'country',
+          rowSpan: function (params) {
+            const data = params.data;
+            const rowIndex = params.node.rowIndex;
+            const totalRows = params.api.getDisplayedRowCount();
+
+            if (
+              rowIndex === 0 ||
+              data.country !== params.api.getDisplayedRowAtIndex(rowIndex - 1).data.country
+            ) {
+              let span = 1;
+              for (let i = rowIndex + 1; i < totalRows; i++) {
+                const next = params.api.getDisplayedRowAtIndex(i).data;
+                if (next.country === data.country) {
+                  span++;
+                } else {
+                  break;
+                }
+              }
+              return span;
+            }
+
+            return 0;
+          },
+          cellClassRules: {
+            'cell-span': 'true'
+          }
+        },
+        { field: 'year' },
+        { field: 'sport' },
+        { field: 'athlete' },
+        { field: 'age' },
+        { field: 'total' }
+      ],
+      defaultColDef: {
+        flex: 1,
+        minWidth: 100,
+        resizable: true,
+        sortable: true
+      },
+      rowData: []
+    };
+  },
+  methods: {
+    onGridReady(params) {
+      fetch('https://www.ag-grid.com/example-assets/olympic-winners.json')
+        .then((res) => res.json())
+        .then((data) => {
+          // Sort the data so matching "country" values are grouped together
+          data.sort((a, b) => a.country.localeCompare(b.country));
+          this.rowData = data;
+        });
+    }
+  }
+};
+</script>
+
+<style scoped>
+.ag-theme-quartz .ag-cell.cell-span {
+  vertical-align: middle;
+}
+</style>
