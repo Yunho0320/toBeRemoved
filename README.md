@@ -1,36 +1,55 @@
-columnDefs: [
-  {
-    field: 'name',
-    rowSpan: function(params) {
-      const data = params.data;
-      const rowIndex = params.node.rowIndex;
-      const value = data.name;
+<template>
+  <div>
+    <h2>Percentiles at Single X</h2>
+    <div ref="plotContainer"></div>
+  </div>
+</template>
 
-      // Don't span if value is empty
-      if (!value) return 1;
+<script>
+import Plotly from 'plotly.js';
 
-      // Check if previous row had same value
-      if (
-        rowIndex > 0 &&
-        params.api.getDisplayedRowAtIndex(rowIndex - 1)?.data.name === value
-      ) {
-        return 0; // skip rendering — it was merged above
+export default {
+  name: 'PercentileStrip',
+
+  mounted() {
+    const percentiles = [
+      { label: 'P50', value: 993 },
+      { label: 'P90', value: 2002 },
+      { label: 'P99', value: 3500 },
+      { label: 'P99.9', value: 4200 }
+    ];
+
+    const x = percentiles.map(() => 'latency'); // single x value repeated
+    const y = percentiles.map(p => p.value);
+    const text = percentiles.map(p => p.label);
+
+    const trace = {
+      x,
+      y,
+      type: 'scatter',
+      mode: 'markers+text',
+      text,
+      textposition: 'right middle',
+      marker: {
+        size: 10,
+        color: 'blue'
+      },
+      name: 'Percentiles'
+    };
+
+    const layout = {
+      title: 'Latency Percentiles (Single X)',
+      xaxis: {
+        title: '',
+        tickvals: ['latency'],
+        showticklabels: false  // optional: hides x label since it's just one
+      },
+      yaxis: {
+        title: 'Response Time (ms)'
       }
+    };
 
-      // Count how many rows should be merged
-      let span = 1;
-      for (let i = rowIndex + 1; i < params.api.getDisplayedRowCount(); i++) {
-        const nextRow = params.api.getDisplayedRowAtIndex(i);
-        if (nextRow?.data.name === value) {
-          span++;
-        } else {
-          break;
-        }
-      }
-      return span;
-    },
-    cellClass: 'merge-cell'
-  },
-  { field: 'model' },
-  { field: 'price' }
-]
+    Plotly.newPlot(this.$refs.plotContainer, [trace], layout);
+  }
+};
+</script>
